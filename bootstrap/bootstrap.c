@@ -15,6 +15,8 @@
 #define printf psvDebugScreenPrintf
 
 #define VITASHELL_BASE_ADDRESS "https://raw.githubusercontent.com/TheOfficialFloW/VitaShell/master/release"
+#define ENSO_BASE_ADDRESS "https://raw.githubusercontent.com/emiyl/h-encore/master/enso"
+#define VHBB_BASE_ADDRESS "https://raw.githubusercontent.com/emiyl/h-encore/master/vhbb"
 
 #define INCLUDE_EXTERN_RESOURCE(name) extern unsigned char _binary_res_##name##_start; extern unsigned char _binary_res_##name##_size; \
 
@@ -47,6 +49,8 @@ enum Items {
   EXIT,
   INSTALL_HENKAKU,
   DOWNLOAD_VITASHELL,
+  DOWNLOAD_ENSO,
+  DOWNLOAD_VHBB,
   RESET_TAIHEN_CONFIG
 };
 
@@ -54,6 +58,8 @@ const char *items[] = {
   "Exit",
   "Install HENkaku",
   "Download VitaShell",
+  "Download enso",
+  "Download Vita Homebrew Browser",
   "Reset taiHEN config.txt"
 };
 
@@ -278,6 +284,8 @@ typedef struct {
   char *dst;
 } DownloadSrcDst;
 
+/* VitaShell */
+
 DownloadSrcDst vitashell_src_dst[] = {
   { "eboot.bin",    "ux0:temp/app/eboot.bin" },
   { "icon0.png",    "ux0:temp/app/sce_sys/icon0.png" },
@@ -309,6 +317,100 @@ int download_vitashell() {
     printf(" > Downloading %s...", vitashell_src_dst[i].src);
     sceClibSnprintf(url, sizeof(url), "%s/%s", VITASHELL_BASE_ADDRESS, vitashell_src_dst[i].src);
     res = download(url, vitashell_src_dst[i].dst);
+    printf("\n");
+    if (res < 0)
+      return res;
+  }
+
+  printf(" > Installing application...\n");
+  res = promote_app("ux0:temp/app");
+  if (res < 0)
+    return res;
+
+  finish_net();
+
+  return 0;
+}
+
+/* enso */
+
+DownloadSrcDst enso_src_dst[] = {
+  { "eboot.bin",    "ux0:temp/app/eboot.bin" },
+  { "icon0.png",    "ux0:temp/app/sce_sys/icon0.png" },
+  { "param.sfo",    "ux0:temp/app/sce_sys/param.sfo" },
+  { "bg.png",       "ux0:temp/app/sce_sys/livearea/contents/bg.png" },
+  { "startup.png",  "ux0:temp/app/sce_sys/livearea/contents/startup.png" },
+  { "template.xml", "ux0:temp/app/sce_sys/livearea/contents/template.xml" },
+  { "head.bin",     "ux0:temp/app/sce_sys/package/head.bin" },
+};
+
+int download_enso() {
+  char url[256];
+  int res;
+  int i;
+
+  init_net();
+
+  remove("ux0:patch/MLCL00003");
+
+  sceIoMkdir("ux0:temp", 6);
+  sceIoMkdir("ux0:temp/app", 6);
+  sceIoMkdir("ux0:temp/app/sce_sys", 6);
+  sceIoMkdir("ux0:temp/app/sce_sys/livearea", 6);
+  sceIoMkdir("ux0:temp/app/sce_sys/livearea/contents", 6);
+  sceIoMkdir("ux0:temp/app/sce_sys/package", 6);
+
+  for (i = 0; i < sizeof(enso_src_dst) / sizeof(DownloadSrcDst); i++) {
+    printf(" > Downloading %s...", enso_src_dst[i].src);
+    sceClibSnprintf(url, sizeof(url), "%s/%s", ENSO_BASE_ADDRESS, enso_src_dst[i].src);
+    res = download(url, enso_src_dst[i].dst);
+    printf("\n");
+    if (res < 0)
+      return res;
+  }
+
+  printf(" > Installing application...\n");
+  res = promote_app("ux0:temp/app");
+  if (res < 0)
+    return res;
+
+  finish_net();
+
+  return 0;
+}
+
+/* VHBB */
+
+DownloadSrcDst vhbb_src_dst[] = {
+  { "eboot.bin",    "ux0:temp/app/eboot.bin" },
+  { "icon0.png",    "ux0:temp/app/sce_sys/icon0.png" },
+  { "param.sfo",    "ux0:temp/app/sce_sys/param.sfo" },
+  { "bg.png",       "ux0:temp/app/sce_sys/livearea/contents/bg.png" },
+  { "startup.png",  "ux0:temp/app/sce_sys/livearea/contents/startup.png" },
+  { "template.xml", "ux0:temp/app/sce_sys/livearea/contents/template.xml" },
+  { "head.bin",     "ux0:temp/app/sce_sys/package/head.bin" },
+};
+
+int download_vhbb() {
+  char url[256];
+  int res;
+  int i;
+
+  init_net();
+
+  remove("ux0:patch/VHBB00001");
+
+  sceIoMkdir("ux0:temp", 6);
+  sceIoMkdir("ux0:temp/app", 6);
+  sceIoMkdir("ux0:temp/app/sce_sys", 6);
+  sceIoMkdir("ux0:temp/app/sce_sys/livearea", 6);
+  sceIoMkdir("ux0:temp/app/sce_sys/livearea/contents", 6);
+  sceIoMkdir("ux0:temp/app/sce_sys/package", 6);
+
+  for (i = 0; i < sizeof(vhbb_src_dst) / sizeof(DownloadSrcDst); i++) {
+    printf(" > Downloading %s...", vhbb_src_dst[i].src);
+    sceClibSnprintf(url, sizeof(url), "%s/%s", VHBB_BASE_ADDRESS, vhbb_src_dst[i].src);
+    res = download(url, vhbb_src_dst[i].dst);
     printf("\n");
     if (res < 0)
       return res;
@@ -478,6 +580,14 @@ int module_start(SceSize args, void *argp) {
         printf(" > Downloading VitaShell...\n");
         sceKernelDelayThread(500 * 1000);
         res = download_vitashell();
+      } else if (sel == DOWNLOAD_ENSO) {
+        printf(" > Downloading enso...\n");
+        sceKernelDelayThread(500 * 1000);
+        res = download_enso();
+      } else if (sel == DOWNLOAD_VHBB) {
+        printf(" > Downloading Vita Homebrew Browser...\n");
+        sceKernelDelayThread(500 * 1000);
+        res = download_vhbb();
       } else if (sel == RESET_TAIHEN_CONFIG) {
         printf(" > Resetting taiHEN config.txt...\n");
         sceKernelDelayThread(500 * 1000);
